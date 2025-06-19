@@ -1,0 +1,114 @@
+#pragma once
+
+#include <QMediaPlayer>
+#include <QAudioOutput>
+#include <QVideoWidget>
+#include <QObject>
+
+namespace prac {
+
+#ifndef PRAC_TESTS
+
+using QMediaPlayer = ::QMediaPlayer;
+
+#else
+
+class QMediaPlayer : public ::QMediaPlayer {
+public:
+    static QMediaPlayer* getLastCreated() {
+        return last_created_;
+    }
+    QMediaPlayer() {
+        last_created_ = this;
+    };
+
+    QMediaPlayer(QObject* parent): ::QMediaPlayer::QMediaPlayer(parent) {
+        last_created_ = this;
+    }
+
+    static bool& getAudioConnected() {
+        static bool audioConnected = false;
+        return audioConnected;
+    }
+
+    static bool& getVideoConnected() {
+        static bool videoConnected = false;
+        return videoConnected;
+    }
+
+    static bool& sourceIsSet() {
+        static bool isSet = false;
+        return isSet;
+    }
+
+    static ::QMediaPlayer::PlaybackState& getState() {
+        static ::QMediaPlayer::PlaybackState state = ::QMediaPlayer::PlaybackState::StoppedState;
+        return state;
+    }
+
+    static qint64& getPosition() {
+        static qint64 position = -1;
+        return position;
+    }
+
+    static void setMockedDuration(int duration) {
+        mocked_duration_ = duration;
+    }
+
+    void setAudioOutput(QAudioOutput* output) {
+        ::QMediaPlayer::setAudioOutput(output);
+        getAudioConnected() = true;
+    }
+
+    void setVideoOutput(QVideoWidget* widget) {
+        ::QMediaPlayer::setVideoOutput(widget);
+        getVideoConnected() = true;
+    }
+
+    static void setSource(const QUrl &new_source) {
+        source = new_source;
+        sourceIsSet() = true;
+    }
+
+    static QUrl getSource() {
+        return source;
+    }
+
+    void play() {
+        getState() = ::QMediaPlayer::PlaybackState::PlayingState;
+    }
+
+    void pause() {
+        getState() = ::QMediaPlayer::PlaybackState::PausedState;
+    }
+
+    void setPosition(qint64 position) {
+        getPosition() = position;
+    }
+
+    ::QMediaPlayer::PlaybackState playbackState() {
+        return getState();
+    }
+
+    int duration() {
+        return mocked_duration_;
+    }
+
+    void emitMediaStatusChanged(::QMediaPlayer::MediaStatus status) {
+        emit mediaStatusChanged(status);
+    }
+
+    void emitPositionChanged(qint64 position) {
+        emit positionChanged(position);
+    }
+
+private:
+    inline static QMediaPlayer* last_created_ = nullptr;
+    inline static int mocked_duration_ = 123;
+    inline static QUrl source{};
+
+};
+
+#endif
+
+}
